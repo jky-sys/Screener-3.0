@@ -4,4 +4,6 @@ pandas
 numpy
 requests
 lxml
+
 plotly
+deep-translator
