@@ -252,6 +252,9 @@ if st.button("🚀 启动扫描", type="primary"):
             ticker_display = res['Ticker'].replace('.SS', ' (沪)').replace('.SZ', ' (深)')
             
             with st.expander(f"📊 {ticker_display} - ¥/${res['Price']:.2f} | {res['Msg']}"):
+                # === 修复：在这里显示信号强度 ===
+                st.markdown(f"#### 信号强度: {'🔥' * (res['Score'] + 1)}")
+                
                 tab1, tab2, tab3 = st.tabs(["📈 技术图表", "🏢 基本面概况", "📰 最新新闻"])
                 
                 with tab1:
