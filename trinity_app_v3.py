@@ -5,23 +5,34 @@ import numpy as np
 import requests
 import io
 import plotly.graph_objects as go
+from datetime import datetime
 
 # ==============================================================================
 # 配置与页面设置
 # ==============================================================================
-st.set_page_config(page_title="Trinity Pro V3.0", page_icon="🇨🇳", layout="wide")
+st.set_page_config(page_title="Trinity Pro V3.1", page_icon="🌍", layout="wide")
 
-# [美股定制列表]
+# [美股定制列表 - 完整恢复版]
 CUSTOM_TICKERS = [
-    # === 半导体/芯片 ===
-    "NVDA", "AMD", "TSM", "AVGO", "INTC", "QCOM", "MU", "TXN", "AMAT", "ASML", "ARM", "SMCI",
-    # === 航天/军工 ===
-    "RKLB", "SPCE", "LUNR", "BA", "LMT", "RTX", "PLTR",
-    # === 加密/科技 ===
-    "MSTR", "COIN", "MARA", "TSLA", "AAPL", "MSFT", "GOOGL", "META", "AMZN", 
-    "NET", "SNOW", "PLTR", "AI",
-    # === 核能 ===
-    "SMR", "OKLO", "CCJ", "CEG", "VST"
+    # === 半导体 & 芯片 ===
+    "NVDA", "AMD", "TSM", "AVGO", "INTC", "QCOM", "MU", "TXN", 
+    "AMAT", "LRCX", "ASML", "ARM", "SMCI", "MRVL", "ON", "ADI", 
+    "KLAC", "SNPS", "CDNS", "TER", "WDC", "PSTG",
+    # === 航天 & 太空 ===
+    "RKLB", "SPCE", "LUNR", "ASTS", "BA", "LMT", "NOC", "RTX", 
+    "GD", "AXON", "PLTR", "SPIR", "BKSY", "RDW",
+    # === 加密货币 ===
+    "MSTR", "COIN", "MARA", "RIOT", "CLSK", "IREN", "HUT", 
+    "BITF", "HOOD", "SQ", "PYPL", "CIFR", "WULF", "CORZ", "SDIG",
+    # === 热门科技 ===
+    "TSLA", "AAPL", "MSFT", "GOOGL", "META", "AMZN", 
+    "NET", "SNOW", "U", "DKNG", "RBLX", "AI", "PATH", "JOBY",
+    # === 核能 & 新能源 ===
+    "SMR", "OKLO", "CCJ", "UEC", "NNE", "BWXT", "LEU", "FLR", 
+    "CEG", "VST", "TLN", "GCT",
+    # === 网络安全 & 未来科技 ===
+    "CRWD", "NBIS", "PANW", "ZS", "FTNT", "S", "SENT", "OKTA",
+    "IONQ", "RGTI", "QUBT", "DNA"
 ]
 
 # [A股热门精选] (注意后缀: .SS=上海, .SZ=深圳)
@@ -51,7 +62,7 @@ ASHARES_TICKERS = [
     "600150.SS"  # 中国船舶
 ]
 
-# 纳指/标普备份列表 (简化版以节省空间，逻辑不变)
+# 纳指/标普备份列表
 NAS100_FALLBACK_TICKERS = ["AAPL", "MSFT", "NVDA", "AMZN", "META", "TSLA", "GOOGL", "AMD", "QCOM", "INTC", "CSCO", "PEP", "AVGO", "COST", "TMUS"]
 SP500_FALLBACK_TICKERS = ["MSFT", "AAPL", "NVDA", "AMZN", "META", "GOOGL", "BRK-B", "LLY", "JPM", "TSLA", "XOM", "UNH", "V", "PG", "MA", "HD", "CVX", "MRK", "ABBV", "KO"]
 
@@ -62,7 +73,7 @@ SP500_FALLBACK_TICKERS = ["MSFT", "AAPL", "NVDA", "AMZN", "META", "GOOGL", "BRK-
 def get_stock_list(mode):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        if mode == "A_SHARES": return ASHARES_TICKERS # 直接返回A股列表
+        if mode == "A_SHARES": return ASHARES_TICKERS
         if mode == "NAS100":
             url = "https://en.wikipedia.org/wiki/Nasdaq-100"
             df = pd.read_html(io.StringIO(requests.get(url, headers=headers).text))[0]
@@ -75,7 +86,9 @@ def get_stock_list(mode):
         else:
             return CUSTOM_TICKERS
     except:
-        return CUSTOM_TICKERS # 兜底
+        if mode == "NAS100": return NAS100_FALLBACK_TICKERS
+        if mode == "SP500": return SP500_FALLBACK_TICKERS
+        return CUSTOM_TICKERS
 
 def calculate_ema(series, span):
     return series.ewm(span=span, adjust=False).mean()
@@ -120,6 +133,23 @@ def calculate_trinity_indicators(df):
     return df
 
 # ==============================================================================
+# 翻译与辅助工具
+# ==============================================================================
+def translate_text(text):
+    if not text or text == '暂无简介':
+        return text
+    try:
+        from deep_translator import GoogleTranslator
+        # GoogleTranslator(source='auto', target='zh-CN')
+        # 注意: 某些云环境可能连接 Google 翻译 API 受限，如失败则回退
+        translated = GoogleTranslator(source='auto', target='zh-CN').translate(text)
+        return translated
+    except ImportError:
+        return text + "\n\n(💡 提示: 如需中文翻译，请在 requirements.txt 中添加 'deep-translator')"
+    except Exception:
+        return text
+
+# ==============================================================================
 # 绘图与信息获取
 # ==============================================================================
 def create_chart(df, ticker):
@@ -151,7 +181,7 @@ def create_chart(df, ticker):
 # ==============================================================================
 # 主界面逻辑
 # ==============================================================================
-st.title("🛰️ Trinity Pro: 全球市场雷达 V3.0")
+st.title("🛰️ Trinity Pro: 全球市场雷达 V3.1")
 st.markdown("---")
 
 # 侧边栏
@@ -182,7 +212,7 @@ if st.button("🚀 启动扫描", type="primary"):
             df = calculate_trinity_indicators(df)
             curr = df.iloc[-1]
             
-            # 筛选逻辑
+            # 筛选逻辑 (保持与 OKLO 修正版一致)
             recent_accumulation = df['inst_buy'].iloc[-90:].max() > 0.5
             recent_trend_days = df['nx_rising'].iloc[-12:]
             trend_just_started = curr['nx_rising'] and (not recent_trend_days.all())
@@ -193,10 +223,8 @@ if st.button("🚀 启动扫描", type="primary"):
                 if df['cd_potential'].iloc[-5:].any(): score += 2
                 if curr['inst_buy'] > 0.5: score += 1
                 
-                # 只有当选中时，才获取基本面信息 (节省流量)
                 info = {}
                 try:
-                    # 只有美股和A股支持 info 比较好
                     info = stock.info
                 except:
                     info = {}
@@ -207,8 +235,8 @@ if st.button("🚀 启动扫描", type="primary"):
                     "Score": score,
                     "Msg": "双底雏形" + (" + CD背离" if score >=2 else ""),
                     "Data": df,
-                    "Info": info, # 存储基本面
-                    "StockObj": stock # 存储对象以便获取新闻
+                    "Info": info,
+                    "StockObj": stock
                 })
                 
         except Exception:
@@ -224,7 +252,6 @@ if st.button("🚀 启动扫描", type="primary"):
             ticker_display = res['Ticker'].replace('.SS', ' (沪)').replace('.SZ', ' (深)')
             
             with st.expander(f"📊 {ticker_display} - ¥/${res['Price']:.2f} | {res['Msg']}"):
-                # 使用标签页分隔功能
                 tab1, tab2, tab3 = st.tabs(["📈 技术图表", "🏢 基本面概况", "📰 最新新闻"])
                 
                 with tab1:
@@ -234,37 +261,42 @@ if st.button("🚀 启动扫描", type="primary"):
                     info = res['Info']
                     if info:
                         col1, col2, col3 = st.columns(3)
-                        # 市值 (自动处理单位)
                         mkt_cap = info.get('marketCap', 0)
                         pe_ratio = info.get('trailingPE', 'N/A')
-                        
                         col1.metric("市值", f"{mkt_cap/100000000:.2f}亿")
                         col2.metric("市盈率 (PE)", pe_ratio)
                         col3.metric("52周最高", info.get('fiftyTwoWeekHigh', 'N/A'))
                         
                         st.markdown("**公司简介:**")
-                        # 简介如果是英文，A股通常没有或者也是英文，这里直接展示
-                        st.write(info.get('longBusinessSummary', info.get('longName', '暂无简介')))
-                        
+                        raw_summary = info.get('longBusinessSummary', info.get('longName', '暂无简介'))
+                        summary_zh = translate_text(raw_summary)
+                        st.write(summary_zh)
                         st.markdown(f"**行业:** {info.get('industry', 'N/A')} | **板块:** {info.get('sector', 'N/A')}")
                     else:
                         st.warning("暂无基本面数据")
 
                 with tab3:
                     st.markdown("##### 最新相关新闻")
+                    news_found = False
                     try:
                         news_list = res['StockObj'].news
-                        if news_list:
-                            for n in news_list[:5]: # 只显示前5条
-                                # 转换时间
+                        if news_list and len(news_list) > 0:
+                            news_found = True
+                            for n in news_list[:5]:
                                 pub_time = datetime.fromtimestamp(n.get('providerPublishTime', 0)).strftime('%Y-%m-%d %H:%M') if 'providerPublishTime' in n else ""
-                                st.markdown(f"**[{n['title']}]({n['link']})**")
+                                title = n.get('title', 'No Title')
+                                link = n.get('link', '#')
+                                st.markdown(f"**[{title}]({link})**")
                                 st.caption(f"发布时间: {pub_time} | 来源: {n.get('publisher', 'Unknown')}")
                                 st.markdown("---")
-                        else:
-                            st.info("暂无最新新闻")
-                    except:
-                        st.info("获取新闻失败")
+                    except Exception:
+                        pass
+                    
+                    if not news_found:
+                        st.info("⚠️ 暂未通过 API 获取到新闻")
+                    
+                    yahoo_link = f"https://finance.yahoo.com/quote/{res['Ticker']}/news"
+                    st.link_button("🔗 前往 Yahoo Finance 查看更多新闻", yahoo_link)
 
     else:
         st.warning("本次扫描未发现符合条件的标的。")
